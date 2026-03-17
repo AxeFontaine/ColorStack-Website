@@ -15,7 +15,7 @@ export default function Navbar() {
     },[]);
 
     return (
-    <nav className ="fixed top-0 w-full bg-[#500000] items-center flex gap-16 justify-center">
+    <nav className="fixed top-0 w-full bg-[#500000] items-center flex gap-16 justify-center z-50">
         <a href = "#Mission" className={linkClass}>About Us</a>
         <a href = "#Joinus" className={linkClass}> Get Involved</a>
         <div className = "flex gap-3">
