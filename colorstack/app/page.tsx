@@ -1,8 +1,8 @@
-import Hero from "../components/sections/Sponsor";
+import Sponsor from "../components/sections/Sponsor";
 export default function Home() {
   return (
     <>
-      <Hero />
+      <Sponsor />
     </>
   );
 }
