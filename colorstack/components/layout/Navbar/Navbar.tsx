@@ -51,7 +51,7 @@ export default function Navbar() {
             href = "#Officers" className={linkClass}>Officers</motion.a>
         <motion.a
             whileHover={{scale: 1.05}}
-            href = "Sponsor" className={linkClass}>Sponsorship</motion.a>
+            href = "#Sponsor" className={linkClass}>Sponsorship</motion.a>
     </nav>
     ) 
 }

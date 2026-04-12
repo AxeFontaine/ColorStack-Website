@@ -2,7 +2,9 @@ import Image from "next/image";
 
 export default function Sponsor() {
   return (
-    <section className="bg-[#Fdfaf2] text-[#333] py-12 font-sans overflow-x-hidden">
+    <section 
+    id = "Sponsor"
+    className="bg-[#Fdfaf2] text-[#333] py-12 font-sans overflow-x-hidden">
       
       {/* Section Header */}
       <div className="mb-12 flex justify-left px-8 md:px-24">
