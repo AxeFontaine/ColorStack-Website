@@ -3,12 +3,13 @@ import Hero from "../components/sections/Hero";
 import Sponsor from "../components/sections/Sponsor";
 import Navbar from "../components/layout/Navbar/Navbar"
 import Footer from "../components/layout/Footer/Footer"
+import Officers from "../components/sections/Officers";
 export default function Home() {
   return (<>
     <Navbar />
     <Hero />
     <Sponsor />
-    <h1 className="flex h-screen items-center justify-center">ColorStack is awesome!</h1>
+    <Officers />
     <Footer />
   </>
   );
