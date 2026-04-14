@@ -1,7 +1,6 @@
 ## Getting Started
 
 ### Frontend
-- ``` cd into the colorstack folder ```
 - ``` npm install ```
 - ``` npm run dev ```
 
