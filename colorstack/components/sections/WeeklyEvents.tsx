@@ -2,11 +2,18 @@
 
 import type { WeekDay, CalendarDisplayEvent, EventCardTheme } from "@/lib/calendar-types";
 
-const PILL_THEME: Record<EventCardTheme, { dot: string; bg: string; text: string }> = {
-  rose: { dot: "bg-rose-400", bg: "bg-rose-50", text: "text-rose-900" },
-  sage: { dot: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-900" },
-  sand: { dot: "bg-amber-400", bg: "bg-amber-50", text: "text-amber-900" },
-  slate: { dot: "bg-slate-400", bg: "bg-slate-100", text: "text-slate-800" },
+const EVENT_THEME: Record<EventCardTheme, { title: string }> = {
+  rose: { title: "text-rose-700" },
+  sage: { title: "text-emerald-700" },
+  sand: { title: "text-amber-700" },
+  slate: { title: "text-slate-700" },
+};
+
+const THEME_CARD: Record<EventCardTheme, { bg: string; border: string }> = {
+  rose: { bg: "bg-rose-50", border: "border-rose-200" },
+  sage: { bg: "bg-emerald-50", border: "border-emerald-200" },
+  sand: { bg: "bg-amber-50", border: "border-amber-200" },
+  slate: { bg: "bg-slate-50", border: "border-slate-200" },
 };
 
 function CalendarPlusIcon({ className }: { className?: string }) {
@@ -32,86 +39,84 @@ function buildGCalUrl(event: CalendarDisplayEvent): string {
   return `https://calendar.google.com/calendar/render?${params}`;
 }
 
-function EventPill({
+function EventRow({
   event,
   isPastDay,
 }: {
   event: CalendarDisplayEvent;
   isPastDay: boolean;
 }) {
-  const t = PILL_THEME[event.theme];
+  const t = EVENT_THEME[event.theme];
   return (
-    <div className="group/pill relative">
-      <div
-        className={`inline-flex cursor-default select-none items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
-          isPastDay ? "bg-neutral-200 text-neutral-400" : `${t.bg} ${t.text}`
+    <div className="group/row relative flex w-full items-center justify-between gap-6 py-4">
+      <span
+        className={`text-2xl font-bold leading-snug ${
+          isPastDay ? "line-through text-neutral-400" : t.title
         }`}
       >
-        {!isPastDay && <span className={`h-2 w-2 shrink-0 rounded-full ${t.dot}`} />}
-        <span className={isPastDay ? "line-through" : ""}>{event.title}</span>
-        <span className="text-xs opacity-70">{event.time}</span>
-      </div>
-      <div
-        className="pointer-events-none absolute bottom-[calc(100%+0.5rem)] left-0 z-20 w-52 rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-xs opacity-0 shadow-lg transition-opacity duration-150 group-hover/pill:pointer-events-auto group-hover/pill:opacity-100"
-        role="tooltip"
-      >
-        <p className="font-semibold text-neutral-900">{event.location}</p>
-        <a
-          href={buildGCalUrl(event)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 inline-flex items-center gap-1 font-semibold text-background hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
-        >
-          <CalendarPlusIcon className="shrink-0" />
-          Add to calendar
-        </a>
+        {event.title}
+      </span>
+      <div className="flex shrink-0 items-center gap-3">
+        <span className={`text-base ${isPastDay ? "text-neutral-400" : "text-neutral-500"}`}>
+          {event.time}
+        </span>
+        {!isPastDay && (
+          <a
+            href={buildGCalUrl(event)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="opacity-0 transition-opacity duration-150 group-hover/row:opacity-100 inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 hover:text-background focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
+            aria-label={`Add ${event.title} to calendar`}
+          >
+            <CalendarPlusIcon className="shrink-0" />
+            Add
+          </a>
+        )}
       </div>
     </div>
   );
 }
 
 function DayRow({ day }: { day: WeekDay }) {
+  const firstEvent = day.events[0];
+  const themeCard = firstEvent && !day.isPast ? THEME_CARD[firstEvent.theme] : null;
+
   const rowClass = [
-    "flex overflow-hidden rounded-2xl border",
+    "flex overflow-hidden rounded-2xl border transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md",
     day.isPast
       ? "border-neutral-200 bg-neutral-100"
       : day.isToday
-        ? "border-neutral-100 bg-white border-l-4 border-l-gold"
-        : "border-neutral-100 bg-white",
+        ? "border-gold/30 bg-gold/[0.06] motion-safe:hover:shadow-gold/10"
+        : themeCard
+          ? `${themeCard.border} ${themeCard.bg}`
+          : "border-neutral-100 bg-white",
   ].join(" ");
 
   return (
     <div className={rowClass}>
       <div
-        className={`flex w-28 shrink-0 flex-col justify-center px-4 py-4 sm:w-36 ${
+        className={`flex w-36 shrink-0 flex-col justify-center px-6 py-10 sm:w-44 ${
           day.isPast ? "text-neutral-400" : "text-neutral-900"
         }`}
       >
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-sm font-semibold">{day.label}</span>
-          {day.isToday && (
-            <span className="rounded-full bg-gold px-1.5 py-0.5 text-xs font-semibold text-background">
-              Today
-            </span>
-          )}
-        </div>
+        <span className="text-base font-semibold">{day.label}</span>
         <span
-          className={`mt-0.5 text-xs ${day.isPast ? "text-neutral-400" : "text-neutral-500"}`}
+          className={`mt-1 text-sm ${day.isPast ? "text-neutral-400" : "text-neutral-500"}`}
         >
           {day.shortDate}
         </span>
       </div>
 
       <div
-        className={`flex flex-1 flex-wrap items-center gap-2 border-l px-4 py-4 ${
-          day.isPast ? "border-neutral-200" : "border-neutral-100"
+        className={`flex flex-1 flex-col justify-center divide-y border-l px-8 ${
+          day.isPast ? "border-neutral-200 divide-neutral-200" : "border-neutral-100 divide-neutral-100"
         }`}
       >
         {day.events.length === 0 ? (
-          <span className="text-sm text-neutral-400">No events</span>
+          <span className="py-10 text-base text-neutral-400">No events</span>
         ) : (
           day.events.map((event) => (
-            <EventPill key={event.id} event={event} isPastDay={day.isPast} />
+            <EventRow key={event.id} event={event} isPastDay={day.isPast} />
           ))
         )}
       </div>
