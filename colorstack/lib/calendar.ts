@@ -2,15 +2,42 @@ import "server-only";
 
 import ICAL from "ical.js";
 
-import type { CalendarDisplayEvent, EventCardTheme } from "@/lib/calendar-types";
+import type { CalendarDisplayEvent, EventCardTheme, WeekDay } from "@/lib/calendar-types";
 
-export type { CalendarDisplayEvent, EventCardTheme } from "@/lib/calendar-types";
+export type { CalendarDisplayEvent, EventCardTheme, WeekDay } from "@/lib/calendar-types";
 
 /** Public group calendar ID (same as embed `src`); override with GOOGLE_CALENDAR_ID. */
 const DEFAULT_CALENDAR_ID =
   "aa9a103be92a0cedc650df8f8a8931357f3c988b0d8faf7120d3cc17b6f37eeb@group.calendar.google.com";
 
 const DISPLAY_TIMEZONE = "America/Chicago";
+
+function dayKey(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: DISPLAY_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+function getWeekDayKeys(now: Date): string[] {
+  const dowStr = new Intl.DateTimeFormat("en-US", {
+    timeZone: DISPLAY_TIMEZONE,
+    weekday: "short",
+  }).format(now);
+  const DOW_INDEX: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  };
+  const dow = DOW_INDEX[dowStr] ?? 0;
+  const daysFromMonday = dow === 0 ? 6 : dow - 1;
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now.getTime() + (i - daysFromMonday) * 86400000);
+    return dayKey(d);
+  });
+}
 
 const EVENT_IMAGES = {
   webdev: "/event-images/webdev.png",
@@ -21,7 +48,6 @@ const EVENT_IMAGES = {
 
 const THEMES: readonly EventCardTheme[] = ["rose", "slate", "sand", "sage"];
 
-/** Card art from event title (aligned with resolveLocationData). */
 function resolveEventImage(title: string): string {
   const t = title.toLowerCase();
   if (t.includes("website development")) return EVENT_IMAGES.webdev;
@@ -54,7 +80,6 @@ export function getCalendarEmbedUrl(): string {
   return `https://calendar.google.com/calendar/embed?src=${id}&ctz=America%2FChicago`;
 }
 
-/** Public iCal feed (works only if the calendar is shared publicly). No API key. */
 function getDefaultPublicIcalUrl(): string {
   const id = encodeURIComponent(getCalendarId());
   return `https://calendar.google.com/calendar/ical/${id}/public/basic.ics`;
@@ -124,27 +149,35 @@ function startToDisplayFromApi(event: GCalEvent): { day: string; time: string } 
   if (start.date) {
     const [y, m, d] = start.date.split("-").map(Number);
     const localMidnight = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
-    return {
-      day: formatDay(localMidnight),
-      time: "All day",
-    };
+    return { day: formatDay(localMidnight), time: "All day" };
   }
 
   if (start.dateTime) {
     const date = new Date(start.dateTime);
     if (Number.isNaN(date.getTime())) return null;
-    return {
-      day: formatDay(date),
-      time: formatTime(date),
-    };
+    return { day: formatDay(date), time: formatTime(date) };
   }
 
   return null;
 }
 
-function mapApiEvent(item: GCalEvent, index: number): CalendarDisplayEvent | null {
+function mapApiEvent(
+  item: GCalEvent,
+  index: number,
+  todayKey: string,
+  weekKeySet: Set<string>,
+): CalendarDisplayEvent | null {
   if (!item.id || item.status === "cancelled") return null;
   const title = item.summary?.trim() || "Untitled event";
+  const startISO = item.start?.dateTime ?? item.start?.date;
+  if (!startISO) return null;
+
+  const startDate = new Date(
+    startISO.includes("T") ? startISO : `${startISO}T12:00:00Z`,
+  );
+  const eventKey = dayKey(startDate);
+  if (!weekKeySet.has(eventKey)) return null;
+
   const when = startToDisplayFromApi(item);
   if (!when) return null;
 
@@ -164,6 +197,7 @@ function mapApiEvent(item: GCalEvent, index: number): CalendarDisplayEvent | nul
     image: resolveEventImage(title),
     htmlLink: item.htmlLink,
     startISO: item.start?.dateTime ?? item.start?.date,
+    isPast: eventKey < todayKey,
   };
 }
 
@@ -179,11 +213,17 @@ function eventUrl(ev: ICAL.Event): string | undefined {
   return undefined;
 }
 
-function collectIcalOccurrences(icsText: string, now: Date, until: Date): Occurrence[] {
+function collectIcalOccurrences(
+  icsText: string,
+  weekKeySet: Set<string>,
+): Occurrence[] {
   const jcal = ICAL.parse(icsText);
   const root = new ICAL.Component(jcal);
   const vevents = root.getAllSubcomponents("vevent");
   const out: Occurrence[] = [];
+
+  const windowStart = new Date(Date.now() - 8 * 86400000);
+  const windowEnd = new Date(Date.now() + 8 * 86400000);
 
   for (const ve of vevents) {
     const ev = new ICAL.Event(ve);
@@ -199,32 +239,32 @@ function collectIcalOccurrences(icsText: string, now: Date, until: Date): Occurr
         const time = iter.next();
         if (iter.complete || !time) break;
         const start = time.toJSDate();
-        if (start.getTime() < now.getTime()) continue;
-        if (start.getTime() > until.getTime()) break;
-        out.push({
-          start,
-          isFullDay: Boolean(time.isDate),
-          event: ev,
-        });
+        if (start.getTime() < windowStart.getTime()) continue;
+        if (start.getTime() > windowEnd.getTime()) break;
+        if (!weekKeySet.has(dayKey(start))) continue;
+        out.push({ start, isFullDay: Boolean(time.isDate), event: ev });
       }
     } else {
       const start = ev.startDate.toJSDate();
       if (Number.isNaN(start.getTime())) continue;
-      const end = ev.endDate ? ev.endDate.toJSDate() : undefined;
-      if (end && end.getTime() < now.getTime()) continue;
-      if (!end && start.getTime() < now.getTime()) continue;
-      out.push({
-        start,
-        isFullDay: Boolean(ev.startDate.isDate),
-        event: ev,
-      });
+      if (
+        start.getTime() < windowStart.getTime() ||
+        start.getTime() > windowEnd.getTime()
+      )
+        continue;
+      if (!weekKeySet.has(dayKey(start))) continue;
+      out.push({ start, isFullDay: Boolean(ev.startDate.isDate), event: ev });
     }
   }
 
   return out;
 }
 
-function mapIcalOccurrence(occ: Occurrence, index: number): CalendarDisplayEvent {
+function mapIcalOccurrence(
+  occ: Occurrence,
+  index: number,
+  todayKey: string,
+): CalendarDisplayEvent {
   const ev = occ.event;
   const title = (ev.summary || "").trim() || "Untitled event";
   const day = formatDay(occ.start);
@@ -236,6 +276,7 @@ function mapIcalOccurrence(occ: Occurrence, index: number): CalendarDisplayEvent
 
   const htmlLink = eventUrl(ev);
   const id = `${ev.uid}-${occ.start.toISOString()}`;
+  const eventKey = dayKey(occ.start);
 
   return {
     id,
@@ -249,35 +290,63 @@ function mapIcalOccurrence(occ: Occurrence, index: number): CalendarDisplayEvent
     image: resolveEventImage(title),
     htmlLink,
     startISO: occ.start.toISOString(),
+    isPast: eventKey < todayKey,
   };
 }
 
-async function getUpcomingEventsFromIcal(feedUrl: string): Promise<{
-  events: CalendarDisplayEvent[];
-  error: string | null;
-}> {
-  try {
-    const res = await fetch(feedUrl, {
-      next: { revalidate: 300 },
-    });
+function buildWeekDays(events: CalendarDisplayEvent[], now: Date): WeekDay[] {
+  const todayKey = dayKey(now);
+  const weekKeys = getWeekDayKeys(now);
 
+  const eventsByDay = new Map<string, CalendarDisplayEvent[]>();
+  for (const event of events) {
+    if (!event.startISO) continue;
+    const k = dayKey(new Date(event.startISO));
+    if (!eventsByDay.has(k)) eventsByDay.set(k, []);
+    eventsByDay.get(k)!.push(event);
+  }
+
+  return weekKeys.map((k) => {
+    const [year, month, day] = k.split("-").map(Number);
+    const noon = new Date(Date.UTC(year!, month! - 1, day!, 12, 0, 0));
+    return {
+      key: k,
+      label: new Intl.DateTimeFormat("en-US", {
+        timeZone: DISPLAY_TIMEZONE,
+        weekday: "long",
+      }).format(noon),
+      shortDate: new Intl.DateTimeFormat("en-US", {
+        timeZone: DISPLAY_TIMEZONE,
+        month: "short",
+        day: "numeric",
+      }).format(noon),
+      isPast: k < todayKey,
+      isToday: k === todayKey,
+      events: (eventsByDay.get(k) ?? []).sort((a, b) => {
+        if (!a.startISO || !b.startISO) return 0;
+        return new Date(a.startISO).getTime() - new Date(b.startISO).getTime();
+      }),
+    };
+  });
+}
+
+async function getUpcomingEventsFromIcal(
+  feedUrl: string,
+  weekKeySet: Set<string>,
+  todayKey: string,
+): Promise<{ events: CalendarDisplayEvent[]; error: string | null }> {
+  try {
+    const res = await fetch(feedUrl, { next: { revalidate: 300 } });
     if (!res.ok) {
       return {
         events: [],
         error: `Could not load calendar feed (${res.status}). If the calendar is private, add ICAL_FEED_URL (secret iCal link) or use GOOGLE_CALENDAR_API_KEY.`,
       };
     }
-
     const text = await res.text();
-    const now = new Date();
-    const until = new Date(now);
-    until.setFullYear(until.getFullYear() + 1);
-
-    const occurrences = collectIcalOccurrences(text, now, until);
+    const occurrences = collectIcalOccurrences(text, weekKeySet);
     occurrences.sort((a, b) => a.start.getTime() - b.start.getTime());
-
-    const events = occurrences.slice(0, 24).map((occ, i) => mapIcalOccurrence(occ, i));
-
+    const events = occurrences.map((occ, i) => mapIcalOccurrence(occ, i, todayKey));
     return { events, error: null };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
@@ -285,87 +354,79 @@ async function getUpcomingEventsFromIcal(feedUrl: string): Promise<{
   }
 }
 
-async function getUpcomingEventsFromApi(): Promise<{
-  events: CalendarDisplayEvent[];
-  error: string | null;
-}> {
+async function getUpcomingEventsFromApi(
+  weekKeySet: Set<string>,
+  todayKey: string,
+): Promise<{ events: CalendarDisplayEvent[]; error: string | null }> {
   const apiKey = process.env.GOOGLE_CALENDAR_API_KEY?.trim();
-  if (!apiKey) {
-    return { events: [], error: "Missing API key" };
-  }
+  if (!apiKey) return { events: [], error: "Missing API key" };
 
   const calendarId = encodeURIComponent(getCalendarId());
-  const timeMin = new Date().toISOString();
+  const timeMin = new Date(Date.now() - 7 * 86400000).toISOString();
+  const timeMax = new Date(Date.now() + 7 * 86400000).toISOString();
 
   const url = new URL(
     `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`,
   );
   url.searchParams.set("key", apiKey);
   url.searchParams.set("timeMin", timeMin);
+  url.searchParams.set("timeMax", timeMax);
   url.searchParams.set("singleEvents", "true");
   url.searchParams.set("orderBy", "startTime");
-  url.searchParams.set("maxResults", "24");
+  url.searchParams.set("maxResults", "50");
 
-  const res = await fetch(url.toString(), {
-    next: { revalidate: 300 },
-  });
-
+  const res = await fetch(url.toString(), { next: { revalidate: 300 } });
   const data = (await res.json()) as GCalListResponse;
 
   if (!res.ok) {
     const msg = data.error?.message ?? res.statusText;
-    return {
-      events: [],
-      error: `Could not load calendar (${res.status}): ${msg}`,
-    };
+    return { events: [], error: `Could not load calendar (${res.status}): ${msg}` };
   }
 
   const items = data.items ?? [];
   const events: CalendarDisplayEvent[] = [];
   let i = 0;
   for (const item of items) {
-    const mapped = mapApiEvent(item, i);
+    const mapped = mapApiEvent(item, i, todayKey, weekKeySet);
     if (mapped) {
       events.push(mapped);
-      i += 1;
+      i++;
     }
   }
-
   return { events, error: null };
 }
 
-/**
- * Loads upcoming events. **No Google Cloud API key is required** if either:
- * - `ICAL_FEED_URL` is set (secret/public iCal URL), or
- * - the calendar is **public** and we can use Google’s default `…/ical/…/public/basic.ics` URL.
- *
- * Optional: `GOOGLE_CALENDAR_API_KEY` uses Calendar API v3 (often better `htmlLink` values).
- */
 export async function getUpcomingEvents(): Promise<{
-  events: CalendarDisplayEvent[];
+  days: WeekDay[];
   error: string | null;
 }> {
+  const now = new Date();
+  const todayKey = dayKey(now);
+  const weekKeys = getWeekDayKeys(now);
+  const weekKeySet = new Set(weekKeys);
+
+  let result: { events: CalendarDisplayEvent[]; error: string | null };
+
   const customIcal = process.env.ICAL_FEED_URL?.trim();
   if (customIcal) {
-    return getUpcomingEventsFromIcal(customIcal);
-  }
-
-  if (process.env.GOOGLE_CALENDAR_API_KEY?.trim()) {
+    result = await getUpcomingEventsFromIcal(customIcal, weekKeySet, todayKey);
+  } else if (process.env.GOOGLE_CALENDAR_API_KEY?.trim()) {
     try {
-      return await getUpcomingEventsFromApi();
+      result = await getUpcomingEventsFromApi(weekKeySet, todayKey);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Unknown error";
-      return { events: [], error: `Calendar API request failed: ${message}` };
+      result = { events: [], error: `Calendar API request failed: ${message}` };
+    }
+  } else {
+    const publicIcal = getDefaultPublicIcalUrl();
+    result = await getUpcomingEventsFromIcal(publicIcal, weekKeySet, todayKey);
+    if (result.error && result.events.length === 0) {
+      result = {
+        events: [],
+        error: `${result.error} You can set ICAL_FEED_URL to your calendar's "secret address in iCal format", or set GOOGLE_CALENDAR_API_KEY for the Calendar API.`,
+      };
     }
   }
 
-  const publicIcal = getDefaultPublicIcalUrl();
-  const result = await getUpcomingEventsFromIcal(publicIcal);
-  if (result.error && result.events.length === 0) {
-    return {
-      events: [],
-      error: `${result.error} You can set ICAL_FEED_URL to your calendar’s “secret address in iCal format”, or set GOOGLE_CALENDAR_API_KEY for the Calendar API.`,
-    };
-  }
-  return result;
+  return { days: buildWeekDays(result.events, now), error: result.error };
 }
