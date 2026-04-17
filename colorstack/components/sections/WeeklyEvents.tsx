@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import type { WeekDay, CalendarDisplayEvent, EventCardTheme } from "@/lib/calendar-types";
 
 const EVENT_THEME: Record<EventCardTheme, { title: string }> = {
@@ -134,11 +136,13 @@ function DayRow({ day }: { day: WeekDay }) {
 
       {firstEvent && !day.isPast && (
         <div className="flex shrink-0 items-center pr-6">
-          <img
+          <Image
             src={firstEvent.image}
             alt=""
             aria-hidden
-            className="h-[120px] w-[120px] rounded-full object-cover"
+            width={120}
+            height={120}
+            className="rounded-full object-cover"
           />
         </div>
       )}
