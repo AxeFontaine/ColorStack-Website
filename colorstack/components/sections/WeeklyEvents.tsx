@@ -48,31 +48,42 @@ function EventRow({
 }) {
   const t = EVENT_THEME[event.theme];
   return (
-    <div className="group/row relative flex w-full items-center justify-between gap-6 py-4">
-      <span
-        className={`text-2xl font-bold leading-snug ${
-          isPastDay ? "line-through text-neutral-400" : t.title
-        }`}
-      >
-        {event.title}
-      </span>
-      <div className="flex shrink-0 items-center gap-3">
-        <span className={`text-base ${isPastDay ? "text-neutral-400" : "text-neutral-500"}`}>
-          {event.time}
+    <div className="group/row relative flex w-full flex-col gap-1 py-4">
+      <div className="flex items-start justify-between gap-6">
+        <span
+          className={`text-2xl font-bold leading-snug ${
+            isPastDay ? "line-through text-neutral-400" : t.title
+          }`}
+        >
+          {event.title}
         </span>
-        {!isPastDay && (
-          <a
-            href={buildGCalUrl(event)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="opacity-0 transition-opacity duration-150 group-hover/row:opacity-100 inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 hover:text-background focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
-            aria-label={`Add ${event.title} to calendar`}
-          >
-            <CalendarPlusIcon className="shrink-0" />
-            Add
-          </a>
-        )}
+        <div className="flex shrink-0 items-center gap-3 pt-1">
+          <span className={`text-base ${isPastDay ? "text-neutral-400" : "text-neutral-500"}`}>
+            {event.time}
+          </span>
+          {!isPastDay && (
+            <a
+              href={buildGCalUrl(event)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="opacity-0 transition-opacity duration-150 group-hover/row:opacity-100 inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 hover:text-background focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
+              aria-label={`Add ${event.title} to calendar`}
+            >
+              <CalendarPlusIcon className="shrink-0" />
+              Add
+            </a>
+          )}
+        </div>
       </div>
+      {event.description && (
+        <p
+          className={`line-clamp-2 text-sm leading-relaxed ${
+            isPastDay ? "text-neutral-400" : "text-neutral-600"
+          }`}
+        >
+          {event.description}
+        </p>
+      )}
     </div>
   );
 }
