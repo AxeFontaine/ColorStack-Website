@@ -47,6 +47,9 @@ const EVENT_IMAGES = {
 } as const;
 
 const THEMES: readonly EventCardTheme[] = ["rose", "slate", "sand", "sage"];
+const MOCK_REC_GAME_DAY_KEY = "2026-04-15";
+const MOCK_REC_GAME_START_ISO = "2026-04-15T22:00:00-05:00";
+const LINCOLN_REC_QUERY = "Lincoln Recreation Center, College Station, TX";
 
 function resolveEventImage(title: string): string {
   const t = title.toLowerCase();
@@ -130,6 +133,9 @@ function resolveLocationData(title: string, location: string | undefined): { lab
   if (normalizedTitle.includes("leetrooms")) {
     return { label: "ZACH", mapUrl: mapQueryUrl(ZACH_QUERY) };
   }
+  if (normalizedTitle.includes("intramural") || normalizedTitle.includes("rec game")) {
+    return { label: "Lincoln Rec Center", mapUrl: mapQueryUrl(LINCOLN_REC_QUERY) };
+  }
 
   const loc = location?.trim();
   if (loc) {
@@ -190,7 +196,7 @@ function mapApiEvent(
     title,
     day: when.day,
     time: when.time,
-    description: description.length > 280 ? `${description.slice(0, 277)}…` : description,
+    description: description.length > 420 ? `${description.slice(0, 417)}…` : description,
     location: locationData.label,
     mapUrl: locationData.mapUrl,
     theme: THEMES[index % THEMES.length] ?? "rose",
@@ -283,7 +289,7 @@ function mapIcalOccurrence(
     title,
     day,
     time,
-    description: description.length > 280 ? `${description.slice(0, 277)}…` : description,
+    description: description.length > 420 ? `${description.slice(0, 417)}…` : description,
     location: locationData.label,
     mapUrl: locationData.mapUrl,
     theme: THEMES[index % THEMES.length] ?? "rose",
@@ -291,6 +297,24 @@ function mapIcalOccurrence(
     htmlLink,
     startISO: occ.start.toISOString(),
     isPast: eventKey < todayKey,
+  };
+}
+
+function buildMockRecGameEvent(dayKeyForMock: string, todayKey: string): CalendarDisplayEvent {
+  const start = new Date(MOCK_REC_GAME_START_ISO);
+  return {
+    id: "mock-rec-game-wed-10pm",
+    title: "Intramural Rec Basketball Game",
+    day: formatDay(start),
+    time: "10:00 PM CT",
+    description:
+      "Mock event: late-night intramural run at Lincoln Recreation Center. Bring athletic shoes and a water bottle.",
+    location: "Lincoln Rec Center",
+    mapUrl: mapQueryUrl(LINCOLN_REC_QUERY),
+    theme: "sage",
+    image: EVENT_IMAGES.default,
+    startISO: MOCK_REC_GAME_START_ISO,
+    isPast: dayKeyForMock < todayKey,
   };
 }
 
@@ -304,6 +328,16 @@ function buildWeekDays(events: CalendarDisplayEvent[], now: Date): WeekDay[] {
     const k = dayKey(new Date(event.startISO));
     if (!eventsByDay.has(k)) eventsByDay.set(k, []);
     eventsByDay.get(k)!.push(event);
+  }
+
+  // One-time mock event for UI preview only (do not repeat in future weeks).
+  if (weekKeys.includes(MOCK_REC_GAME_DAY_KEY)) {
+    const mock = buildMockRecGameEvent(MOCK_REC_GAME_DAY_KEY, todayKey);
+    const list = eventsByDay.get(MOCK_REC_GAME_DAY_KEY) ?? [];
+    if (!list.some((event) => event.id === mock.id)) {
+      list.push(mock);
+      eventsByDay.set(MOCK_REC_GAME_DAY_KEY, list);
+    }
   }
 
   return weekKeys.map((k) => {

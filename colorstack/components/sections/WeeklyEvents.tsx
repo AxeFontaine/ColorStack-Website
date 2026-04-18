@@ -1,151 +1,285 @@
 "use client";
 
+import { CalendarTodayIcon } from "@/components/icons/CalendarTodayIcon";
+import { EventKindIcon } from "@/components/icons/EventKindIcon";
+import type { WeekDay, CalendarDisplayEvent } from "@/lib/calendar-types";
 import Image from "next/image";
+import { useLayoutEffect, useRef, useState, type HTMLAttributes, type ReactNode } from "react";
 
-import type { WeekDay, CalendarDisplayEvent, EventCardTheme } from "@/lib/calendar-types";
+const FALLBACK_DESCRIPTION =
+  "Join the community for this week's session. Come ready to learn, ask questions, and connect with other members.";
 
-const EVENT_THEME: Record<EventCardTheme, { title: string }> = {
-  rose: { title: "text-rose-700" },
-  sage: { title: "text-emerald-700" },
-  sand: { title: "text-amber-700" },
-  slate: { title: "text-slate-700" },
-};
+const SECTION_INTRO =
+  "Join us for weeks filled with Workshops, Hands-on Sessions, Rec Games, and more!";
 
-const THEME_CARD: Record<EventCardTheme, { bg: string; border: string }> = {
-  rose: { bg: "bg-rose-50", border: "border-rose-200" },
-  sage: { bg: "bg-emerald-50", border: "border-emerald-200" },
-  sand: { bg: "bg-amber-50", border: "border-amber-200" },
-  slate: { bg: "bg-slate-50", border: "border-slate-200" },
-};
+const COMMUNITY_STRIP_PHOTOS = [
+  {
+    src: "/images/community-strip/01-classroom.png",
+    alt: "TAMU ColorStack members collaborating at a chapter meetup",
+  },
+  {
+    src: "/images/community-strip/02-colorstack-polos.png",
+    alt: "ColorStack members in chapter polos at a workshop",
+  },
+  {
+    src: "/images/community-strip/03-welcome-meeting.png",
+    alt: "TAMU ColorStack group at a welcome meeting",
+  },
+  {
+    src: "/images/community-strip/04-ice-rink.jpg",
+    alt: "TAMU ColorStack members at an ice rink outing",
+  },
+] as const;
 
-function CalendarPlusIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
-      <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M12 14v4M10 16h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function buildGCalUrl(event: CalendarDisplayEvent): string {
-  const params = new URLSearchParams({ action: "TEMPLATE", text: event.title });
-  if (event.startISO) {
-    const start = new Date(event.startISO);
-    const end = new Date(start.getTime() + 60 * 60 * 1000);
-    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
-    params.set("dates", `${fmt(start)}/${fmt(end)}`);
-  }
-  if (event.description) params.set("details", event.description);
-  if (event.location) params.set("location", event.location);
-  return `https://calendar.google.com/calendar/render?${params}`;
-}
-
-function EventRow({
-  event,
-  isPastDay,
+/** Reliable scroll reveal (CSS view timelines are inconsistent across browsers). */
+function ScrollReveal({
+  children,
+  className = "",
+  delayMs = 0,
+  style,
+  ...rest
 }: {
-  event: CalendarDisplayEvent;
-  isPastDay: boolean;
-}) {
-  const t = EVENT_THEME[event.theme];
+  children: ReactNode;
+  className?: string;
+  /** Stagger when multiple items share the same intersection moment */
+  delayMs?: number;
+} & Omit<HTMLAttributes<HTMLDivElement>, "children">) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const reveal = () => {
+      setVisible(true);
+    };
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      requestAnimationFrame(reveal);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            observer.disconnect();
+            reveal();
+            break;
+          }
+        }
+      },
+      { root: null, rootMargin: "0px 0px -6% 0px", threshold: 0.06 }
+    );
+
+    observer.observe(el);
+
+    // Already in view on load (common for hero-adjacent content): show without waiting for scroll
+    const check = () => {
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      if (r.top < vh * 0.92 && r.bottom > vh * 0.05) {
+        observer.disconnect();
+        requestAnimationFrame(reveal);
+      }
+    };
+    check();
+    requestAnimationFrame(check);
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="group/row relative flex w-full flex-col gap-1 py-4">
-      <div className="flex items-start justify-between gap-6">
-        <span
-          className={`text-2xl font-bold leading-snug ${
-            isPastDay ? "line-through text-neutral-400" : t.title
-          }`}
-        >
-          {event.title}
-        </span>
-        <div className="flex shrink-0 items-center gap-3 pt-1">
-          <span className={`text-base ${isPastDay ? "text-neutral-400" : "text-neutral-500"}`}>
-            {event.time}
-          </span>
-          {!isPastDay && (
-            <a
-              href={buildGCalUrl(event)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="opacity-0 transition-opacity duration-150 group-hover/row:opacity-100 inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 hover:text-background focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
-              aria-label={`Add ${event.title} to calendar`}
-            >
-              <CalendarPlusIcon className="shrink-0" />
-              Add
-            </a>
-          )}
-        </div>
-      </div>
-      {event.description && (
-        <p
-          className={`line-clamp-2 text-sm leading-relaxed ${
-            isPastDay ? "text-neutral-400" : "text-neutral-600"
-          }`}
-        >
-          {event.description}
-        </p>
-      )}
+    <div
+      ref={ref}
+      className={`transform-gpu transition-[opacity,transform] duration-[750ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${visible ? "translate-y-0 opacity-100" : "-translate-y-6 opacity-0 motion-reduce:translate-y-0 motion-reduce:opacity-100"} ${className}`}
+      style={{
+        ...(style && typeof style === "object" ? style : {}),
+        ...(visible && delayMs > 0 ? { transitionDelay: `${delayMs}ms` } : {}),
+      }}
+      {...rest}
+    >
+      {children}
     </div>
   );
 }
 
-function DayRow({ day }: { day: WeekDay }) {
-  const firstEvent = day.events[0];
-  const themeCard = firstEvent && !day.isPast ? THEME_CARD[firstEvent.theme] : null;
+function ordinalDay(n: number): string {
+  const v = n % 100;
+  if (v >= 11 && v <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1:
+      return `${n}st`;
+    case 2:
+      return `${n}nd`;
+    case 3:
+      return `${n}rd`;
+    default:
+      return `${n}th`;
+  }
+}
 
-  const rowClass = [
-    "flex overflow-hidden rounded-2xl border transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md",
-    day.isPast
-      ? "border-neutral-200 bg-neutral-100"
-      : day.isToday
-        ? "border-gold/30 bg-gold/[0.06] motion-safe:hover:shadow-gold/10"
-        : themeCard
-          ? `${themeCard.border} ${themeCard.bg}`
-          : "border-neutral-100 bg-white",
-  ].join(" ");
+/** `day.key` (YYYY-MM-DD) → heading like "April 7th". */
+function formatEventHeadingDate(dayKey: string): string {
+  const [ys, ms, ds] = dayKey.split("-");
+  const y = Number(ys);
+  const m = Number(ms) - 1;
+  const d = Number(ds);
+  if (!y || m < 0 || !d) return "";
+  const date = new Date(Date.UTC(y, m, d, 12, 0, 0));
+  const month = new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "UTC" }).format(date);
+  return `${month} ${ordinalDay(d)}`;
+}
+
+function EventDescription({
+  desc,
+  fullText,
+  muted,
+}: {
+  desc: string;
+  fullText: string;
+  muted: boolean;
+}) {
+  const t = desc.trim();
+  const m = t.match(/^(.{8,220}?[.!?])(\s+)([\s\S]+)$/);
+  const bodyMuted = muted ? "text-neutral-400" : "text-neutral-700";
+  const briefMuted = muted ? "text-neutral-400" : "text-neutral-600";
+
+  if (m?.[1] && m[3]?.trim()) {
+    const lead = m[1].trim();
+    const rest = m[3].trim();
+    return (
+      <>
+        <p className={`mt-2 text-base leading-relaxed ${bodyMuted}`}>{rest}</p>
+        <p className={`mt-2 text-sm leading-snug ${briefMuted}`}>{lead}</p>
+      </>
+    );
+  }
+
+  return <p className={`mt-2 text-base leading-relaxed ${bodyMuted}`}>{fullText}</p>;
+}
+
+function EventBlock({
+  event,
+  isPastDay,
+  dayKey,
+}: {
+  event: CalendarDisplayEvent;
+  isPastDay: boolean;
+  dayKey: string;
+}) {
+  const muted = isPastDay || event.isPast;
+  const desc = event.description?.trim() ?? "";
+  const loc = event.location?.trim() ?? "";
+  const fullText = desc || FALLBACK_DESCRIPTION;
+  const headingDate = formatEventHeadingDate(dayKey);
 
   return (
-    <div className={rowClass}>
-      <div
-        className={`flex w-36 shrink-0 flex-col justify-center px-6 py-10 sm:w-44 ${
-          day.isPast ? "text-neutral-400" : "text-neutral-900"
-        }`}
-      >
-        <span className="text-base font-semibold">{day.label}</span>
-        <span
-          className={`mt-1 text-sm ${day.isPast ? "text-neutral-400" : "text-neutral-500"}`}
-        >
-          {day.shortDate}
-        </span>
-      </div>
+    <article
+      className={`group/event border-b border-neutral-100 py-5 last:border-b-0 sm:py-6 ${
+        muted ? "text-neutral-400" : ""
+      }`}
+    >
+      <div className="flex flex-row items-start gap-4 sm:gap-6 md:gap-8">
+        <div className="min-w-0 flex-1">
+          <h3
+            className={`font-sans text-xl font-bold leading-tight tracking-tight sm:text-2xl ${
+              muted
+                ? "line-through decoration-neutral-300"
+                : "text-background transition-colors duration-500 ease-out group-hover/event:text-[#5c0a0a]"
+            }`}
+          >
+            {event.title}
+          </h3>
+          <EventDescription desc={desc} fullText={fullText} muted={muted} />
 
-      <div
-        className={`flex flex-1 flex-col justify-center divide-y border-l px-8 ${
-          day.isPast ? "border-neutral-200 divide-neutral-200" : "border-neutral-100 divide-neutral-100"
-        }`}
-      >
-        {day.events.length === 0 ? (
-          <span className="py-10 text-base text-neutral-400">No events</span>
-        ) : (
-          day.events.map((event) => (
-            <EventRow key={event.id} event={event} isPastDay={day.isPast} />
-          ))
-        )}
-      </div>
-
-      {firstEvent && !day.isPast && (
-        <div className="flex shrink-0 items-center pr-6">
-          <Image
-            src={firstEvent.image}
-            alt=""
-            aria-hidden
-            width={120}
-            height={120}
-            className="rounded-full object-cover"
-          />
+          <div
+            className={`mt-4 ${
+              muted ? "text-neutral-400" : "text-neutral-700"
+            }`}
+          >
+            <p className="font-sans text-sm font-bold tabular-nums sm:text-base">{headingDate}</p>
+            <p className="mt-0.5 font-sans text-sm font-medium tabular-nums leading-snug sm:text-[0.95rem]">
+              {event.time}
+            </p>
+            {loc ? (
+              <p
+                className={`mt-1 text-xs font-semibold uppercase leading-snug tracking-wide sm:text-[0.7rem] ${
+                  muted ? "text-neutral-400" : "text-neutral-500"
+                }`}
+              >
+                {loc}
+              </p>
+            ) : null}
+          </div>
         </div>
-      )}
+
+        <div className="flex shrink-0 flex-col items-end pt-0.5 sm:pt-1">
+          <EventKindIcon title={event.title} muted={muted} isPastDay={isPastDay} />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function DayCard({ day }: { day: WeekDay }) {
+  const stateClasses = day.isPast
+    ? "border-neutral-200 bg-neutral-100/90"
+    : day.isToday
+      ? "border-gold/35 bg-white shadow-[0_1px_0_rgba(201,162,39,0.12)] ring-1 ring-gold/20"
+      : "border-neutral-200/90 bg-white";
+
+  const dateStripClasses = day.isPast
+    ? "border-neutral-200 bg-neutral-200/40 text-neutral-500"
+    : day.isToday
+      ? "border-gold/25 bg-gold/[0.07] text-background"
+      : "border-neutral-100 bg-neutral-50/80 text-background";
+
+  const interactiveDay = !day.isPast;
+  const emptyTone = day.isPast ? "text-neutral-400" : "text-neutral-500";
+
+  return (
+    <div
+      className={`group/day transform-gpu overflow-hidden rounded-3xl border ${stateClasses} ${
+        interactiveDay
+          ? "motion-safe:transition-[transform,box-shadow,border-color] motion-safe:duration-[650ms] motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:hover:-translate-y-1 motion-safe:hover:border-gold/25 motion-safe:hover:shadow-xl motion-safe:hover:shadow-gold/10"
+          : "motion-safe:transition-opacity motion-safe:duration-500 motion-safe:ease-out"
+      }`}
+    >
+      <div className="flex flex-col md:flex-row md:items-stretch">
+        <div
+          className={`flex shrink-0 flex-row items-center gap-4 border-b px-6 py-5 md:w-60 md:flex-col md:items-start md:justify-center md:border-b-0 md:border-r md:py-10 md:pl-8 md:pr-6 lg:w-64 ${dateStripClasses}`}
+        >
+          <div className="flex flex-col">
+            <span className="font-serif text-2xl font-bold leading-none md:text-3xl">{day.label}</span>
+            <span
+              className={`mt-3 text-base font-medium tabular-nums ${
+                day.isPast ? "text-neutral-400" : "text-neutral-600"
+              }`}
+            >
+              {day.shortDate}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex min-h-[6rem] flex-1 flex-col justify-center px-5 py-4 md:min-h-[7rem] md:px-9 md:py-8">
+          {day.events.length === 0 ? (
+            <div className="flex flex-row items-center gap-4 py-8 sm:gap-6 md:gap-8 md:py-10">
+              <p className={`min-w-0 flex-1 text-center text-base md:text-left ${emptyTone}`}>
+                No events planned.
+              </p>
+              <div className={`flex shrink-0 items-center justify-center ${emptyTone}`}>
+                <CalendarTodayIcon className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16" />
+              </div>
+            </div>
+          ) : (
+            day.events.map((event) => (
+              <EventBlock key={event.id} event={event} isPastDay={day.isPast} dayKey={day.key} />
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -159,43 +293,59 @@ export function WeeklyEvents({ days, fetchError }: WeeklyEventsProps) {
   return (
     <section
       id="events"
-      className="relative w-full overflow-hidden bg-white px-6 py-16 text-neutral-900 sm:px-10 sm:py-20 md:py-24 lg:px-16"
+      className="relative w-full overflow-hidden bg-background px-6 py-16 text-foreground sm:px-10 sm:py-20 md:py-24 lg:px-16"
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-20 right-[10%] h-72 w-72 rounded-full bg-gold/15 blur-3xl motion-safe:animate-events-shimmer motion-reduce:animate-none motion-reduce:opacity-30" />
-        <div className="absolute -bottom-24 left-[5%] h-80 w-80 rounded-full bg-background/[0.06] blur-3xl motion-safe:animate-events-shimmer motion-safe:[animation-delay:3s] motion-reduce:animate-none motion-reduce:opacity-25" />
+        <div className="absolute -top-24 right-[8%] h-80 w-80 rounded-full bg-gold/[0.14] blur-3xl motion-safe:animate-events-shimmer motion-reduce:animate-none motion-reduce:opacity-25" />
+        <div className="absolute -bottom-28 left-0 h-72 w-[28rem] max-w-[90vw] rounded-full bg-white/[0.06] blur-3xl motion-safe:animate-events-shimmer motion-safe:[animation-delay:3.5s] motion-reduce:animate-none motion-reduce:opacity-20" />
       </div>
 
-      <div className="relative mx-auto max-w-[1400px]">
-        <h2 className="font-serif text-4xl font-bold leading-[1.1] tracking-tight text-background motion-safe:animate-events-header-in motion-reduce:animate-none motion-reduce:opacity-100 sm:text-5xl md:text-[2.75rem]">
-          This Week&apos;s Events
-        </h2>
-        <p className="mt-5 text-base leading-relaxed text-neutral-700 motion-safe:animate-events-header-in motion-safe:[animation-delay:120ms] motion-safe:[animation-fill-mode:both] motion-reduce:animate-none motion-reduce:opacity-100 sm:text-lg">
-          Join our community for workshops, hands-on sessions, and networking
-          events designed to build your skills and connections in tech.
-        </p>
+      <div className="relative mx-auto max-w-[1100px]">
+        <ScrollReveal className="max-w-2xl">
+          <h2 className="font-serif text-4xl font-bold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-[2.85rem]">
+            This Week&apos;s Events
+          </h2>
+          <p className="mt-5 text-base leading-relaxed text-foreground/85 sm:text-lg">{SECTION_INTRO}</p>
+        </ScrollReveal>
+
+        <ScrollReveal className="mt-10 w-full max-w-[1100px]">
+          <div
+            className="grid w-full grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4"
+            role="group"
+            aria-label="Chapter community photos"
+          >
+            {COMMUNITY_STRIP_PHOTOS.map((photo) => (
+              <div
+                key={photo.src}
+                className="relative aspect-[4/3] overflow-hidden rounded-2xl ring-1 ring-white/10"
+              >
+                <Image
+                  src={photo.src}
+                  alt={photo.alt}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, 25vw"
+                />
+              </div>
+            ))}
+          </div>
+        </ScrollReveal>
 
         {fetchError ? (
-          <div
+          <ScrollReveal
             className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 px-6 py-5 text-sm text-amber-950"
             role="alert"
           >
-            <p className="font-semibold text-background">
-              Calendar couldn&apos;t load
-            </p>
+            <p className="font-semibold text-background">Calendar couldn&apos;t load</p>
             <p className="mt-2 text-neutral-700">{fetchError}</p>
-          </div>
+          </ScrollReveal>
         ) : null}
 
-        <div className="mt-10 flex flex-col gap-3">
-          {days.map((day, index) => (
-            <div
-              key={day.key}
-              style={{ animationDelay: `${120 + index * 50}ms` }}
-              className="motion-safe:animate-events-card-in motion-safe:[animation-fill-mode:both] motion-reduce:animate-none motion-reduce:opacity-100"
-            >
-              <DayRow day={day} />
-            </div>
+        <div className="mt-12 flex flex-col gap-5 md:gap-7">
+          {days.map((day) => (
+            <ScrollReveal key={day.key}>
+              <DayCard day={day} />
+            </ScrollReveal>
           ))}
         </div>
       </div>
