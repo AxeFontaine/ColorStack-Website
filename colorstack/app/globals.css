@@ -2,7 +2,7 @@
 
 :root {
   --background: #500000;
-  --foreground: white;
+  --foreground: #ffffff;
 }
 
 @theme inline {
@@ -18,7 +18,6 @@
   --animate-fade-in-up: fadeInUp 1s ease-out forwards;
 
   @keyframes float {
-
     0%,
     100% {
       transform: translateY(0px);
