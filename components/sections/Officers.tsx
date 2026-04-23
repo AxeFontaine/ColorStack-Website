@@ -10,7 +10,7 @@ export default function Officers() {
   ];
 
   return (
-    <section id="officers" className="w-full bg-[#500000]">
+    <section id="Officers" className="w-full bg-[#500000]">
       <div className="mx-auto max-w-6xl px-6 py-20">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-2 md:items-stretch">
 
