@@ -200,9 +200,9 @@ export default function Mission() {
     <section
       ref={sectionRef}
       id="mission"
-      className="font-colorstack-body relative w-full overflow-hidden bg-[#0e1524] px-4 pb-16 pt-8 text-white sm:px-8 sm:pb-[4.5rem] sm:pt-10 lg:px-12 lg:pb-20 lg:pt-12"
+      className="font-poppins relative w-full overflow-hidden bg-[#0e1524] px-4 pb-16 pt-8 text-white sm:px-8 sm:pb-[4.5rem] sm:pt-10 lg:px-12 lg:pb-20 lg:pt-12"
     >
-      <div className="wm" aria-hidden="true">
+      <div className="wm font-lora" aria-hidden="true">
         <div className="wm-row wm-scroll-left">
           <span className="wm-track">ColorStack&nbsp;ColorStack&nbsp;ColorStack&nbsp;ColorStack&nbsp;</span>
           <span className="wm-track">ColorStack&nbsp;ColorStack&nbsp;ColorStack&nbsp;ColorStack&nbsp;</span>
@@ -256,26 +256,26 @@ export default function Mission() {
       <div className="relative z-10 mx-auto max-w-6xl">
         <div className="mb-7 flex flex-col items-center justify-between gap-6 border-t border-white/10 pt-8 md:mb-8 md:flex-row md:items-center md:pt-10">
           <div
-            className={`max-w-xl text-center md:text-left ${isVisible ? "animate-fade-in-up opacity-0" : "opacity-0"}`}
-            style={{ animationFillMode: "forwards" }}
+            className={`max-w-xl text-center md:text-left ${isVisible ? 'animate-fade-in-up opacity-0' : 'opacity-0'}`}
+            style={{ animationFillMode: 'forwards' }}
           >
             <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[#f2b53b] sm:text-[0.72rem] sm:tracking-[0.32em]">
               What We Do
             </p>
-            <h2 className="font-colorstack-heading text-[2.5rem] leading-[0.95] text-white sm:text-[3rem] md:text-[3.7rem]">
-              {mode === "national"
+            <h2 className="font-lora font-medium text-[2.5rem] leading-[0.95] text-white sm:text-[3rem] md:text-[3.7rem]">
+              {mode === 'national'
                 ? "ColorStack's mission at the national level."
-                : "How the mission comes to life in our local chapter."}
+                : 'How the mission comes to life in our local chapter.'}
             </h2>
           </div>
 
           <div
             className={`grid w-full max-w-[18rem] grid-cols-2 justify-center gap-4 self-center sm:max-w-[20rem] md:w-auto md:max-w-none md:self-start ${
-              isVisible ? "animate-fade-in-up opacity-0" : "opacity-0"
+              isVisible ? 'animate-fade-in-up opacity-0' : 'opacity-0'
             }`}
-            style={{ animationDelay: "120ms", animationFillMode: "forwards" }}
+            style={{ animationDelay: '120ms', animationFillMode: 'forwards' }}
           >
-            {(["national", "local"] as MissionMode[]).map((view) => {
+            {(['national', 'local'] as MissionMode[]).map((view) => {
               const isActive = mode === view;
               const viewConfig = modeConfig[view];
 
@@ -298,13 +298,11 @@ export default function Mission() {
             <article
               key={`${mode}-${panel.title}`}
               className={`relative overflow-hidden rounded-[1rem] border p-5 sm:rounded-[1.2rem] sm:p-6 md:min-h-[330px] md:p-8 ${
-                mode === "national" ? `${config.card} ${config.cardBorder}` : "border-white/18 bg-[#500000]"
-              } ${
-                isVisible ? "animate-fade-in-up opacity-0" : "opacity-0"
-              }`}
-              style={{ animationDelay: `${220 + idx * 120}ms`, animationFillMode: "forwards" }}
+                mode === 'national' ? `${config.card} ${config.cardBorder}` : 'border-white/18 bg-[#500000]'
+              } ${isVisible ? 'animate-fade-in-up opacity-0' : 'opacity-0'}`}
+              style={{ animationDelay: `${220 + idx * 120}ms`, animationFillMode: 'forwards' }}
             >
-              {mode === "local" ? (
+              {mode === 'local' ? (
                 <>
                   <div className="absolute inset-0">
                     <Image
@@ -338,13 +336,15 @@ export default function Mission() {
                 <span className={`mb-5 block h-1.5 w-14 rounded-full sm:mb-6 sm:w-16 ${config.accent}`} />
 
                 <h3
-                  className={`font-colorstack-heading mb-4 text-[2rem] leading-none sm:mb-5 sm:text-[2.4rem] ${config.headingText}`}
+                  className={`font-lora font-medium mb-4 text-[2rem] leading-none sm:mb-5 sm:text-[2.4rem] ${config.headingText}`}
                 >
                   {panel.title}
                 </h3>
 
-                <p className={`max-w-none text-[0.98rem] leading-7 sm:max-w-[28ch] sm:text-[1.02rem] sm:leading-8 ${config.bodyText}`}>
-                  {mode === "national" ? panel.nationalText : panel.localText}
+                <p
+                  className={`max-w-none text-[0.98rem] leading-7 sm:max-w-[28ch] sm:text-[1.02rem] sm:leading-8 ${config.bodyText}`}
+                >
+                  {mode === 'national' ? panel.nationalText : panel.localText}
                 </p>
               </div>
             </article>

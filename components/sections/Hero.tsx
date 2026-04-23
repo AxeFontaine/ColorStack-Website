@@ -1,10 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { Inter, Lora } from "next/font/google";
-
-const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
-const lora = Lora({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"] });
 
 const sponsors = [
   { name: "Hewlett Packard Enterprise", logo: "/sponsors/hpeLogo.png", size: "h-10 w-36 md:h-12 md:w-48" },
@@ -33,7 +29,7 @@ export default function Hero() {
   return (
     <section
       id="hero"
-      className={`${inter.className} relative w-full min-h-screen flex flex-col bg-[#500000] overflow-hidden`}
+      className="relative w-full min-h-screen flex flex-col bg-[#500000] overflow-hidden"
     >
       {/* Main split content area */}
       <div className="flex-1 flex flex-col lg:flex-row w-full max-w-[1600px] mx-auto relative z-10">
@@ -48,7 +44,7 @@ export default function Hero() {
           </p>
 
           <h1
-            className={`${lora.className} text-4xl md:text-5xl lg:text-5xl xl:text-6xl text-white font-medium leading-[1.2] mb-8 animate-fade-in-up opacity-0 drop-shadow-xl`}
+            className={`font-lora text-4xl md:text-5xl lg:text-5xl xl:text-6xl text-white font-medium leading-[1.2] mb-8 animate-fade-in-up opacity-0 drop-shadow-xl`}
             style={{ animationDelay: "150ms", animationFillMode: "forwards" }}
           >
             Helping Black and Latinx Computer Science students get{' '}

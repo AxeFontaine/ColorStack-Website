@@ -2,7 +2,6 @@
 import { motion } from "motion/react"
 import {useState, useEffect } from "react";
 import Image from "next/image"
-import "@fontsource/inter"
 import '@/app/globals.css';
 import { animate } from "motion";
 export default function Navbar() {
@@ -17,24 +16,24 @@ export default function Navbar() {
     },[]);
 
     return (
-    <nav className="fixed top-0 w-full bg-[#500000] items-center flex gap-16 justify-center z-50">
+    <nav className="fixed font-poppins top-0 w-full bg-[#500000] items-center flex gap-16 justify-center z-50">
         <motion.a 
             whileHover={{scale: 1.05}}
             href = "#Mission" className={linkClass}>About Us</motion.a>
         <motion.a 
             whileHover={{scale: 1.05}}
             href = "#Joinus" className={linkClass}> Get Involved</motion.a>
-        <div className = "flex gap-3">
+        <div className = "flex">
             <a href = "#top">
-            <Image src="/tamucolorstacklogo.png"width ={50} height = {50}alt="colorstack info"/>
+            <Image src="/tamucolorstacklogo.png" width ={50} height = {50}alt="colorstack info"/>
             </a>
-            <motion.div 
-            initial={{ maxWidth: 200, opacity: 1, scaleX: 1 }}
-            className="flex font-bold text-2xl items-center gap-1 overflow-hidden"
+            <motion.div
+            initial={{ maxWidth: 220, opacity: 1, scaleX: 1 }}
+            className="flex font-medium text-2xl items-center gap-1 overflow-hidden"
             animate={{
                 scaleX: isScrolled ? 0: 1,
                 opacity: isScrolled ? 0 : 1,
-                maxWidth: isScrolled ? 0: 200
+                maxWidth: isScrolled ? 0: 220
             }}
             style={{ originX: -0.15}}
             transition={{
