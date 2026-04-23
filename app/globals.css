@@ -1,29 +1,5 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "Nib Pro";
-  src: url("https://cdn.prod.website-files.com/61ae4846c32bb55b23085ccd/620e0708b3cbd85bbd67516d_nib-semibold-pro.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Nib Pro";
-  src: url("https://cdn.prod.website-files.com/61ae4846c32bb55b23085ccd/620e07c07f96ec00d0c9016b_nib-semibold-italic-pro.woff2") format("woff2");
-  font-weight: 600;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "GT Walsheim";
-  src: url("https://cdn.prod.website-files.com/61ae4846c32bb55b23085ccd/620e07efa7423439900ea54d_GT-Walsheim-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
   --background: #500000;
   --foreground: white;
@@ -34,6 +10,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-inter: var(--font-inter);
+  --font-lora: var(--font-lora);
+  --font-poppins: var(--font-poppins);
 
   --animate-float: float 4s ease-in-out infinite;
   --animate-scroll: scrollX 80s linear infinite;
@@ -119,17 +98,24 @@ body {
   animation-delay: 400ms;
 }
 
-.font-colorstack-heading {
-  font-family: "Nib Pro", Georgia, serif;
-  font-weight: 600;
-}
-
-.font-colorstack-body {
-  font-family: "GT Walsheim", Arial, sans-serif;
-}
-
 .animate-fade-in-up {
   animation: fadeInUp 1s ease-out forwards;
+}
+
+@layer utilities {
+
+  /* Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
 }
 
 .wm {
@@ -144,9 +130,8 @@ body {
   opacity: 0.07;
   overflow: hidden;
   user-select: none;
-  font-family: "Nib Pro", Georgia, serif;
   font-size: clamp(1.75rem, 9vw, 5rem);
-  font-weight: 800;
+  font-weight: 400;
   line-height: 1;
   letter-spacing: -0.04em;
   color: #ffffff;
