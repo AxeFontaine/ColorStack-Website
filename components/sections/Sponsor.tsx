@@ -23,13 +23,15 @@ export default function Sponsor() {
     let nextStep = 1;
     if (latest < 0.15)
       nextStep = 1; // 0% - 15%: Slide 1
-    else if (latest < 0.4)
-      nextStep = 2; // 15% - 40%: Slide 2
-    else if (latest < 0.55)
-      nextStep = 3; // 40% - 55%: Full Screen 1
+    else if (latest < 0.3)
+      nextStep = 2; // 15% - 30%: Slide 2
+    else if (latest < 0.45)
+      nextStep = 3; // 30% - 45%: Full Screen 1
+    else if (latest < 0.6)
+      nextStep = 4; // 45% - 60%: Full Screen 2
     else if (latest < 0.8)
-      nextStep = 4; // 55% - 80%: Full Screen 2
-    else nextStep = 5; // 80% - 100%: Full Screen 3
+      nextStep = 5; // 60% - 80%: Full Screen 3
+    else nextStep = 6; // 80% - 100%: Download Slide
 
     setStep((prev) => (prev !== nextStep ? nextStep : prev));
   });
@@ -37,14 +39,10 @@ export default function Sponsor() {
   const transitionConfig = { duration: 0.8, ease: 'easeInOut' } as const;
 
   return (
-    // NOTE: If the ENTIRE sequence feels too long or short, change "h-[500vh]"
-    <section id="Sponsor" ref={containerRef} className="relative h-[500vh] bg-[#Fdfaf2] text-[#333] font-sans">
+    // Increased to 600vh to maintain smooth scrolling pacing with the new slide
+    <section id="Sponsor" ref={containerRef} className="relative h-[600vh] bg-[#Fdfaf2] text-[#333] font-sans">
       <div className="sticky top-0 h-screen w-full overflow-hidden">
-        {/* ========================================================================
-          2. HEADER VERTICAL POSITIONING
-          Increase numbers (e.g., from md:top-32 to top-40) to push "Sponsor Us" text lower, decrease to move it up.
-          ========================================================================
-        */}
+        {/* HEADER VERTICAL POSITIONING */}
         <motion.div
           animate={{ opacity: step <= 2 ? 1 : 0 }}
           transition={transitionConfig}
@@ -55,10 +53,7 @@ export default function Sponsor() {
           </h2>
         </motion.div>
 
-        {/* ========================================================================
-          3. MAIN CONTENT
-          ========================================================================
-        */}
+        {/* MAIN CONTENT */}
         <div className="absolute font-poppins inset-x-0 z-10 top-[55%] -translate-y-1/2">
           {/* --- Slide 1: Image Right --- */}
           <motion.div
@@ -115,7 +110,7 @@ export default function Sponsor() {
           <Image src="/DuoPic1.jpg" alt="Officers Posing" fill className="object-cover" />
           <div className="absolute inset-0 bg-black/50 transition-colors duration-300"></div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <h3 className="text-white font-lora text-4xl sm:5xl md:text-6xl lg:7xl font-bold text-center px-6 drop-shadow-md leading-relaxed">
+            <h3 className="text-white font-lora text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-center px-6 drop-shadow-md leading-relaxed">
               Host targeted recruiting events on
               <br /> campus or virtually
             </h3>
@@ -131,7 +126,7 @@ export default function Sponsor() {
           <Image src="/CSGroupPhoto1.jpg" alt="Placeholder 1" fill className="object-cover object-bottom" />
           <div className="absolute inset-0 bg-black/60 transition-colors duration-300"></div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <h3 className="text-white font-lora text-4xl sm:5xl md:text-6xl lg:7xl font-bold text-center px-6 drop-shadow-md leading-relaxed">
+            <h3 className="text-white font-lora text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-center px-6 drop-shadow-md leading-relaxed">
               Connect directly with rising
               <br /> tech talent
             </h3>
@@ -147,10 +142,41 @@ export default function Sponsor() {
           <Image src="/CSGroupPhoto2.jpg" alt="Placeholder 2" fill className="object-cover" />
           <div className="absolute inset-0 bg-black/60 transition-colors duration-300"></div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <h3 className="text-white font-lora text-4xl sm:5xl md:text-6xl lg:7xl font-bold text-center px-6 drop-shadow-md leading-relaxed">
+            <h3 className="text-white font-lora text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-center px-6 drop-shadow-md leading-relaxed">
               Help shape the future of
               <br /> tech diversity
             </h3>
+          </div>
+        </motion.div>
+
+        {/* --- Slide 4: Final Download Screen --- */}
+        <motion.div
+          animate={{ opacity: step === 6 ? 1 : 0 }}
+          transition={transitionConfig}
+          // IMPORTANT: Pointer events must be dynamic here. When not on step 6, they are 'none' so you don't accidentally click the invisible button while on earlier slides.
+          className={`absolute inset-0 z-50 flex items-center justify-center bg-[#500000] ${step === 6 ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        >
+          <div className="text-center px-6 flex flex-col items-center justify-center max-w-4xl">
+            <h3 className="text-[#FAF3E0] font-lora text-4xl sm:text-5xl md:text-6xl font-bold drop-shadow-md leading-relaxed mb-6">
+              Ready to make an impact?
+            </h3>
+
+            <p className="text-white/90 font-poppins text-lg md:text-xl mb-10 leading-relaxed">
+              Download our sponsorship packet to explore partnership tiers, core benefits, and learn how your
+              organization can support TAMU ColorStack.
+            </p>
+
+            <motion.a
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              href="/TAMU_ColorStack_Corporate_Sponsorship.pdf"
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#FCB432] text-[#500000] font-poppins font-bold text-lg md:text-xl px-10 py-5 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300"
+            >
+              Download Sponsorship Packet
+            </motion.a>
           </div>
         </motion.div>
       </div>
