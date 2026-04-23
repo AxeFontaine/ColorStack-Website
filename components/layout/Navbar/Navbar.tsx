@@ -21,13 +21,14 @@ export default function Navbar() {
   const closeMenu = () => setIsOpen(false);
 
   return (
-    <nav className="fixed font-poppins top-0 w-full bg-[#500000] z-50 shadow-md">
-      <div className="flex items-center justify-between px-6 py-2 md:justify-center md:gap-16 md:px-0">
-        <div className="hidden md:flex items-center gap-16">
+    // Changed "fixed" to "sticky" right here:
+    <nav className="sticky font-poppins top-0 w-full bg-[#500000] z-50 shadow-md">
+      <div className="flex items-center justify-between px-6 py-2 md:justify-center md:gap-12 lg:gap-16 md:px-0">
+        <div className="hidden md:flex items-center gap-16 md:gap-10">
           <motion.a whileHover={{ scale: 1.05 }} href="#Mission" className={linkClass}>
             About Us
           </motion.a>
-          <motion.a whileHover={{ scale: 1.05 }} href="#Joinus" className={linkClass}>
+          <motion.a whileHover={{ scale: 1.05 }} href="#Footer" className={linkClass}>
             Get Involved
           </motion.a>
         </div>
@@ -55,7 +56,7 @@ export default function Navbar() {
           </motion.div>
         </div>
 
-        <div className="hidden md:flex items-center gap-16">
+        <div className="hidden md:flex items-center gap-16 md:gap-10">
           <motion.a whileHover={{ scale: 1.05 }} href="#Officers" className={linkClass}>
             Officers
           </motion.a>
@@ -92,7 +93,7 @@ export default function Navbar() {
               <a href="#Mission" onClick={closeMenu} className={linkClass}>
                 About Us
               </a>
-              <a href="#Joinus" onClick={closeMenu} className={linkClass}>
+              <a href="#Footer" onClick={closeMenu} className={linkClass}>
                 Get Involved
               </a>
               <a href="#Officers" onClick={closeMenu} className={linkClass}>

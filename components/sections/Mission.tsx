@@ -199,7 +199,7 @@ export default function Mission() {
   return (
     <section
       ref={sectionRef}
-      id="mission"
+      id="Mission"
       className="font-poppins relative w-full overflow-hidden bg-[#0e1524] px-4 pb-16 pt-8 text-white sm:px-8 sm:pb-[4.5rem] sm:pt-10 lg:px-12 lg:pb-20 lg:pt-12"
     >
       <div className="wm font-lora" aria-hidden="true">
